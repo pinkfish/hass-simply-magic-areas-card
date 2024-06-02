@@ -5,7 +5,9 @@ import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helper
 import { ScopedRegistryHost } from '@lit-labs/scoped-registry-mixin';
 import { BoilerplateCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
-import { formfieldDefinition } from '../elements/formfield';
+import '@material/web/select/outlined-select.js';
+import '@material/web/textfield/outlined-text-field.js';
+import '@material/web/switch/switch.js';
 
 @customElement('boilerplate-card-editor')
 export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implements LovelaceCardEditor {
@@ -16,10 +18,6 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
   @state() private _helpers?: any;
 
   private _initialized = false;
-
-  static elementDefinitions = {
-    ...formfieldDefinition,
-  };
 
   public setConfig(config: BoilerplateCardConfig): void {
     this._config = config;
@@ -60,7 +58,7 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
     const entities = Object.keys(this.hass.states);
 
     return html`
-      <mwc-select
+      <md-outlined-select
         naturalMenuWidth
         fixedMenuPosition
         label="Entity (Required)"
@@ -70,29 +68,31 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
         @closed=${(ev) => ev.stopPropagation()}
       >
         ${entities.map((entity) => {
-          return html`<mwc-list-item .value=${entity}>${entity}</mwc-list-item>`;
+          return html`<md-select-option .value=${entity}>${entity}</md-select-option>`;
         })}
-      </mwc-select>
-      <mwc-textfield
+      </md-outlined-select>
+      <md-outlined-text-field
         label="Name (Optional)"
         .value=${this._name}
         .configValue=${'name'}
         @input=${this._valueChanged}
-      ></mwc-textfield>
-      <mwc-formfield .label=${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}>
-        <mwc-switch
+      ></md-outlined-text-field>
+      <label>
+        ${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}
+        <md-switch
           .checked=${this._show_warning !== false}
           .configValue=${'show_warning'}
           @change=${this._valueChanged}
-        ></mwc-switch>
-      </mwc-formfield>
-      <mwc-formfield .label=${`Toggle error ${this._show_error ? 'off' : 'on'}`}>
-        <mwc-switch
+        ></md-switch>
+      </label>
+      <label>
+        ${`Toggle error ${this._show_error ? 'off' : 'on'}`}
+        <md-switch
           .checked=${this._show_error !== false}
           .configValue=${'show_error'}
           @change=${this._valueChanged}
-        ></mwc-switch>
-      </mwc-formfield>
+        ></md-switch>
+      </label>
     `;
   }
 

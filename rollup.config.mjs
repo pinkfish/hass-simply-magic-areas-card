@@ -2,9 +2,14 @@ import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import babel from '@rollup/plugin-babel';
-import  terser from '@rollup/plugin-terser';
+import terser from '@rollup/plugin-terser';
 import serve from 'rollup-plugin-serve';
 import json from '@rollup/plugin-json';
+import ignore from 'rollup-plugin-ignore';
+import { ignoreSwitchFiles } from './elements/ignore/switch.mjs';
+import { ignoreSelectFiles } from './elements/ignore/select.mjs';
+import { ignoreTextfieldFiles } from './elements/ignore/textfield.mjs';
+import { ignoreFormFieldFiles } from './elements/ignore/formfield.mjs';
 
 const dev = process.env.ROLLUP_WATCH;
 
@@ -25,10 +30,11 @@ const plugins = [
   json(),
   babel({
     exclude: 'node_modules/**',
-    babelHelpers: 'bundled' 
+    babelHelpers: 'bundled',
   }),
   dev && serve(serveopts),
   !dev && terser(),
+  ignore([...ignoreSelectFiles, ...ignoreSwitchFiles, ...ignoreTextfieldFiles, ...ignoreFormFieldFiles]),
 ];
 
 export default [
