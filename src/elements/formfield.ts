@@ -1,3 +1,4 @@
+/*
 import { MdOutlinedField as MdOutlinedFieldData, type MdOutlinedField  } from '@material/web/field/outlined-field';
 
 export const formfieldDefinition = {
@@ -9,3 +10,4 @@ export const formfieldDefinition = {
 };
 
 export { MdOutlinedField}
+*/

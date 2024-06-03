@@ -1,3 +1,4 @@
+/*
 import { MdSwitch } from '@material/web/switch/switch';
 import { MdRipple } from '@material/web/ripple/ripple';
 import { MdFocusRing } from '@material/web/focus/md-focus-ring';
@@ -19,3 +20,4 @@ export const switchDefinition = {
     }
   }
 };
+*/

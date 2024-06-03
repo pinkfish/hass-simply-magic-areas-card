@@ -5,10 +5,12 @@ import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helper
 import { ScopedRegistryHost } from '@lit-labs/scoped-registry-mixin';
 import { BoilerplateCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
+/*
 import { formfieldDefinition } from './elements/formfield';
 import { selectDefinition } from './elements/select';
 import { switchDefinition } from './elements/switch';
 import { textfieldDefinition } from './elements/textfield';
+*/
 
 @customElement('boilerplate-card-editor')
 export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implements LovelaceCardEditor {
@@ -20,12 +22,14 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
 
   private _initialized = false;
 
+  /*
   static elementDefinitions = {
     ...textfieldDefinition,
     ...selectDefinition,
     ...switchDefinition,
     ...formfieldDefinition,
   };
+  */
 
   public setConfig(config: BoilerplateCardConfig): void {
     this._config = config;
