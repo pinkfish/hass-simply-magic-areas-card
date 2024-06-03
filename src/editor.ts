@@ -5,9 +5,10 @@ import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helper
 import { ScopedRegistryHost } from '@lit-labs/scoped-registry-mixin';
 import { BoilerplateCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
-import '@material/web/select/outlined-select.js';
-import '@material/web/textfield/outlined-text-field.js';
-import '@material/web/switch/switch.js';
+import { formfieldDefinition } from '../elements/formfield.mjs';
+import { selectDefinition } from '../elements/select.mjs';
+import { switchDefinition } from '../elements/switch.mjs';
+import { textfieldDefinition } from '../elements/textfield.mjs';
 
 @customElement('boilerplate-card-editor')
 export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implements LovelaceCardEditor {
@@ -18,6 +19,13 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
   @state() private _helpers?: any;
 
   private _initialized = false;
+
+  static elementDefinitions = {
+    ...textfieldDefinition,
+    ...selectDefinition,
+    ...switchDefinition,
+    ...formfieldDefinition,
+  };
 
   public setConfig(config: BoilerplateCardConfig): void {
     this._config = config;
@@ -58,7 +66,7 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
     const entities = Object.keys(this.hass.states);
 
     return html`
-      <md-outlined-select
+      <mwc-select
         naturalMenuWidth
         fixedMenuPosition
         label="Entity (Required)"
@@ -68,9 +76,9 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
         @closed=${(ev) => ev.stopPropagation()}
       >
         ${entities.map((entity) => {
-          return html`<md-select-option .value=${entity}>${entity}</md-select-option>`;
+          return html`<md-select-option .value="${entity}" .headline="${entity}"></md-select-option>`;
         })}
-      </md-outlined-select>
+      </mwc-select>
       <md-outlined-text-field
         label="Name (Optional)"
         .value=${this._name}
@@ -80,7 +88,7 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
       <label>
         ${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}
         <md-switch
-          .checked=${this._show_warning !== false}
+          .selected=${this._show_warning !== false}
           .configValue=${'show_warning'}
           @change=${this._valueChanged}
         ></md-switch>
@@ -88,7 +96,7 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
       <label>
         ${`Toggle error ${this._show_error ? 'off' : 'on'}`}
         <md-switch
-          .checked=${this._show_error !== false}
+          .selected=${this._show_error !== false}
           .configValue=${'show_error'}
           @change=${this._valueChanged}
         ></md-switch>

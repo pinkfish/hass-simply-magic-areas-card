@@ -5,6 +5,7 @@ import serve from 'rollup-plugin-serve';
 import terser from '@rollup/plugin-terser';
 import json from '@rollup/plugin-json';
 import ignore from 'rollup-plugin-ignore';
+import sizes from 'rollup-plugin-sizes';
 import { ignoreSwitchFiles } from './elements/ignore/switch.mjs';
 import { ignoreSelectFiles } from './elements/ignore/select.mjs';
 import { ignoreTextfieldFiles } from './elements/ignore/textfield.mjs';
@@ -30,14 +31,16 @@ export default {
       port: 5000,
       allowCrossOrigin: true,
       headers: {
-        'Access-Control-Allow-Origin': '*', 
+        'Access-Control-Allow-Origin': '*',
       },
     }),
     ignore([
-      ...ignoreSelectFiles, 
+      '@material/web', 
+      ...ignoreSelectFiles,
       ...ignoreSwitchFiles,
       ...ignoreTextfieldFiles,
       ...ignoreFormFieldFiles,
     ]),
+    sizes({ details: true }),
   ],
 };
