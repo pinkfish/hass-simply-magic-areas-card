@@ -1,5 +1,1 @@
-export const ignoreTextfieldFiles = [
-  '@material/web/textfield/outlined-text-field.js',
-  '@material/web/field/outlined-field.js',
-  '@material/web/focus/md-focus-ring.js'
-];
+export const ignoreTextfieldFiles = ['@material/mwc-notched-outline/mwc-notched-outline.js'];

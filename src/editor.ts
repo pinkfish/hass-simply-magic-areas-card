@@ -5,15 +5,9 @@ import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helper
 import { ScopedRegistryHost } from '@lit-labs/scoped-registry-mixin';
 import { BoilerplateCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
-/*
-import { formfieldDefinition } from './elements/formfield';
-import { selectDefinition } from './elements/select';
-import { switchDefinition } from './elements/switch';
-import { textfieldDefinition } from './elements/textfield';
-*/
 
 @customElement('boilerplate-card-editor')
-export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implements LovelaceCardEditor {
+export class BoilerplateCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
   @state() private _config?: BoilerplateCardConfig;
@@ -70,41 +64,35 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
     const entities = Object.keys(this.hass.states);
 
     return html`
-      <md-outlined-select
-        naturalMenuWidth
-        fixedMenuPosition
+      <ha-entity-picker
+        .hass=${this.hass}
         label="Entity (Required)"
-        .configValue=${'entity'}
         .value=${this._entity}
-        @selected=${this._valueChanged}
+        .configValue=${'entity'}
+        @change=${this._valueChanged}
         @closed=${(ev) => ev.stopPropagation()}
       >
-        ${entities.map((entity) => {
-          return html`<md-select-option .value="${entity}" .headline="${entity}"></md-select-option>`;
-        })}
-      </md-outlined-select>
-      <md-outlined-text-field
+      </ha-entity-picker>
+      <mwc-textfield
         label="Name (Optional)"
         .value=${this._name}
         .configValue=${'name'}
         @input=${this._valueChanged}
-      ></md-outlined-text-field>
-      <label>
-        ${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}
-        <md-switch
-          .selected=${this._show_warning !== false}
+      ></mwc-textfield>
+      <mwc-formfield .label=${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}>
+        <mwc-switch
+          .checked=${this._show_warning !== false}
           .configValue=${'show_warning'}
           @change=${this._valueChanged}
-        ></md-switch>
-      </label>
-      <label>
-        ${`Toggle error ${this._show_error ? 'off' : 'on'}`}
-        <md-switch
-          .selected=${this._show_error !== false}
+        ></mwc-switch>
+      </mwc-formfield>
+      <mwc-formfield .label=${`Toggle error ${this._show_error ? 'off' : 'on'}`}>
+        <mwc-switch
+          .checked=${this._show_error !== false}
           .configValue=${'show_error'}
           @change=${this._valueChanged}
-        ></md-switch>
-      </label>
+        ></mwc-switch>
+      </mwc-formfield>
     `;
   }
 
@@ -141,6 +129,7 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
     }
     fireEvent(this, 'config-changed', { config: this._config });
   }
+
 
   static styles: CSSResultGroup = css`
     mwc-select,
