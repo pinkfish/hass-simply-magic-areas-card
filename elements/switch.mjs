@@ -1,15 +1,15 @@
-import { SwitchBase } from '@material/mwc-switch/deprecated/mwc-switch-base.js';
-import { RippleBase } from '@material/mwc-ripple/mwc-ripple-base.js';
-import { styles as switchStyles } from '@material/mwc-switch/deprecated/mwc-switch.css';
-import { styles as rippleStyles } from '@material/mwc-ripple/mwc-ripple.css';
+import { MdSwitch } from '@material/web/switch/switch.js';
+import { MdRipple } from '@material/web/ripple/ripple.js';
+import { styles as switchStyles } from '@material/web/switch/switch.css';
+import { styles as rippleStyles } from '@material/web/ripple/ripple.css';
 
 export const switchDefinition = {
-  'mwc-switch': class extends SwitchBase {
+  'md-switch': class extends MdSwitch {
     static get styles() {
       return switchStyles;
     }
   },
-  'mwc-ripple': class extends RippleBase {
+  'md-ripple': class extends MdRipple {
     static get styles() {
       return rippleStyles;
     }

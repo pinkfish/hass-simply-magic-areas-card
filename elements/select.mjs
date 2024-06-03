@@ -1,53 +1,59 @@
-import { SelectBase } from '@material/mwc-select/mwc-select-base.js';
-import { ListBase } from '@material/mwc-list/mwc-list-base.js';
-import { ListItemBase } from '@material/mwc-list/mwc-list-item-base.js';
-import { MenuBase } from '@material/mwc-menu/mwc-menu-base.js';
-import { MenuSurfaceBase } from '@material/mwc-menu/mwc-menu-surface-base.js';
-import { RippleBase } from '@material/mwc-ripple/mwc-ripple-base.js';
+import { MdOutlinedSelect } from '@material/web/select/outlined-select.js';
+import { MdSelectOptions } from '@material/web/select/select-option.js';
+import { MdList } from '@material/web/list/list.js';
+import { MdListItem } from '@material/web/list/menu-item.js';
+import { MdMenu } from '@material/web/menu/menu.js';
+import { MdMenuSurface } from '@material/web/menu/mwc-menu-surface-base.js';
+import { MdRipple } from '@material/web/ripple/ripple.js';
 import { NotchedOutlineBase } from '@material/mwc-notched-outline/mwc-notched-outline-base.js';
 
-import { styles as selectStyles } from '@material/mwc-select/mwc-select.css';
-import { styles as listStyles } from '@material/mwc-list/mwc-list.css';
-import { styles as listItemStyles } from '@material/mwc-list//mwc-list-item.css';
-import { styles as rippleStyles } from '@material/mwc-ripple/mwc-ripple.css';
-import { styles as menuStyles } from '@material/mwc-menu/mwc-menu.css';
-import { styles as menuSurfaceStyles } from '@material/mwc-menu/mwc-menu-surface.css';
-import { styles as notchedOutlineStyles } from '@material/mwc-notched-outline/mwc-notched-outline.css';
+import { styles as selectStyles } from '@material/select/outlined-select.css';
+import { styles as listStyles } from '@material/list/list.css';
+import { styles as listItemStyles } from '@material/list/list-item.css';
+import { styles as rippleStyles } from '@material/ripple/ripple.css';
+import { styles as menuStyles } from '@material/menu/menu.css';
+import { styles as menuSurfaceStyles } from '@material/menu/menu.css';
+// import { styles as notchedOutlineStyles } from '@material/mwc-notched-outline/mwc-notched-outline.css';
 
 export const selectDefinition = {
-  'mwc-select': class extends SelectBase {
+  'md-outlined-select': class extends MdOutlinedSelect {
     static get styles() {
       return selectStyles;
     }
   },
-  'mwc-list': class extends ListBase {
+  'md-select-option': class extends MdSelectOptions {
+    static get styles() {
+      return selectStyles;
+    }
+  },
+  'md-list': class extends MdList {
     static get styles() {
       return listStyles;
     }
   },
-  'mwc-list-item': class extends ListItemBase {
+  'md-list-item': class extends MdListItem {
     static get styles() {
       return listItemStyles;
     }
   },
-  'mwc-ripple': class extends RippleBase {
+  'md-ripple': class extends MdRipple {
     static get styles() {
       return rippleStyles;
     }
   },
-  'mwc-menu': class extends MenuBase {
+  'md-menu': class extends MdMenu {
     static get styles() {
       return menuStyles;
     }
   },
-  'mwc-menu-surface': class extends MenuSurfaceBase {
+  'md-menu-surface': class extends MdMenuSurface {
     static get styles() {
       return menuSurfaceStyles;
     }
   },
-  'mwc-notched-outline': class extends NotchedOutlineBase {
-    static get styles() {
-      return notchedOutlineStyles;
-    }
-  },
+  // 'mwc-notched-outline': class extends NotchedOutlineBase {
+  //   static get styles() {
+  //     return notchedOutlineStyles;
+  //   }
+  // },
 };
