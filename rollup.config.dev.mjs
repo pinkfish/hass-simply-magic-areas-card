@@ -17,12 +17,14 @@ export default {
     dir: './dist',
     format: 'es',
   },
+  logLevel: 'debug',
   plugins: [
     resolve(),
     typescript(),
     json(),
     babel({
       exclude: 'node_modules/**',
+      babelHelpers: 'bundled',
     }),
     terser(),
     serve({
@@ -40,7 +42,7 @@ export default {
       ...ignoreSwitchFiles,
       ...ignoreTextfieldFiles,
       ...ignoreFormFieldFiles,
-    ]),
+    ], { commonjsBugFix: true }),
     sizes({ details: true }),
   ],
 };

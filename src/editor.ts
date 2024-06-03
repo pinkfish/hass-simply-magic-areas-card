@@ -5,10 +5,10 @@ import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helper
 import { ScopedRegistryHost } from '@lit-labs/scoped-registry-mixin';
 import { BoilerplateCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
-import { formfieldDefinition } from '../elements/formfield.mjs';
-import { selectDefinition } from '../elements/select.mjs';
-import { switchDefinition } from '../elements/switch.mjs';
-import { textfieldDefinition } from '../elements/textfield.mjs';
+import { formfieldDefinition } from './elements/formfield';
+import { selectDefinition } from './elements/select';
+import { switchDefinition } from './elements/switch';
+import { textfieldDefinition } from './elements/textfield';
 
 @customElement('boilerplate-card-editor')
 export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implements LovelaceCardEditor {
@@ -66,7 +66,7 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
     const entities = Object.keys(this.hass.states);
 
     return html`
-      <mwc-select
+      <md-outlined-select
         naturalMenuWidth
         fixedMenuPosition
         label="Entity (Required)"
@@ -78,7 +78,7 @@ export class BoilerplateCardEditor extends ScopedRegistryHost(LitElement) implem
         ${entities.map((entity) => {
           return html`<md-select-option .value="${entity}" .headline="${entity}"></md-select-option>`;
         })}
-      </mwc-select>
+      </md-outlined-select>
       <md-outlined-text-field
         label="Name (Optional)"
         .value=${this._name}

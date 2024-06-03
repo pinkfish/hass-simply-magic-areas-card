@@ -1,6 +1,11 @@
 export const ignoreSelectFiles = [
-  '@material/web/select/outlined-select.js',
-  '@material/web/focus/focus-ring.ts',
-  '@material/web/focus/focus-ring.js',
-  '@material/web/focus/internal/focus-ring.js',
+  '@material/web/elevation/elevation',
+  '@material/web/elevation/internal/elevation-styles',
+  '@material/web/elevation/internal/elevation',
+  '@material/web/select/outlined-select',
+  '@material/web/focus/md-focus-ring',
+  '@material/web/focus/focus-ring',
+  'node_modules/@material/web/focus/md-focus-ring',
+  'node_modules/@material/web/focus/md-focus-ring',
+  '@material/web/focus/internal/focus-ring',
 ];

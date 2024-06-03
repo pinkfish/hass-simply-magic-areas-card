@@ -34,7 +34,13 @@ const plugins = [
   }),
   dev && serve(serveopts),
   !dev && terser(),
-  ignore([...ignoreSelectFiles, ...ignoreSwitchFiles, ...ignoreTextfieldFiles, ...ignoreFormFieldFiles]),
+  ignore([
+    '@material/web',
+    ...ignoreSelectFiles,
+    ...ignoreSwitchFiles,
+    ...ignoreTextfieldFiles,
+    ...ignoreFormFieldFiles,
+  ], { commonjsBugFix: true }),
 ];
 
 export default [
