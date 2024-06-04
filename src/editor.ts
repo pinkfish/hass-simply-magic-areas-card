@@ -1,10 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { LitElement, html, TemplateResult, css, CSSResultGroup } from 'lit';
 import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
-import "@material/mwc-switch/mwc-switch";
-import "@material/mwc-textfield/mwc-textfield";
-import "@material/mwc-formfield/mwc-formfield";
-import "../homeassistant-frontend/src/components/entity/ha-entity-picker";
 
 import { BoilerplateCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
