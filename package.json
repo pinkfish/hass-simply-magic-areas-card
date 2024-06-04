@@ -18,6 +18,8 @@
   "dependencies": {
     "custom-card-helpers": "^1.9.0",
     "home-assistant-js-websocket": "^9.3.0",
+    "@mdi/js": "7.4.47",
+    "memoize-one": "6.0.0",
     "lit": "^2.8.0",
     "@lit-labs/context": "0.4.1",
     "@lit-labs/motion": "1.0.7",

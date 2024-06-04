@@ -2,7 +2,7 @@
 import { LitElement, html, TemplateResult, css } from 'lit';
 import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
 
-import { SimplyMagicCardConfig } from './types';
+import { SimplyMagicCardConfig } from './internal/types';
 import { customElement, property, state } from 'lit/decorators.js';
 
 @customElement('simply-magic-area-card-editor')

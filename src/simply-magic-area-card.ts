@@ -1,21 +1,74 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { LitElement, html, TemplateResult, css, PropertyValues, CSSResultGroup } from 'lit';
+import {
+  mdiFan,
+  mdiFanOff,
+  mdiLightbulbMultiple,
+  mdiLightbulbMultipleOff,
+  mdiRun,
+  mdiToggleSwitch,
+  mdiToggleSwitchOff,
+  mdiWaterAlert,
+} from '@mdi/js';
+import { classMap } from 'lit/directives/class-map.js';
+import { styleMap } from 'lit/directives/style-map.js';
+import type { Connection, HassEntity, UnsubscribeFunc } from 'home-assistant-js-websocket';
+import memoizeOne from 'memoize-one';
+import { LitElement, html, TemplateResult, css, PropertyValues, CSSResultGroup, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
   HomeAssistant,
-  hasConfigOrEntityChanged,
-  hasAction,
+  computeDomain,
   ActionHandlerEvent,
   handleAction,
   LovelaceCardEditor,
   getLovelace,
+  STATES_OFF,
+  isNumericState,
+  formatNumber,
+  navigate,
+  forwardHaptic,
+  LovelaceCard,
 } from 'custom-card-helpers'; // This is a community maintained npm module with common helper functions/types. https://github.com/custom-cards/custom-card-helpers
 
-import type { SimplyMagicCardConfig } from './types';
-import { actionHandler } from './action-handler-directive';
+import type {
+  SimplyMagicCardConfig,
+  EntityRegistryEntry,
+  AreaRegistryEntry,
+  DeviceRegistryEntry,
+} from './internal/types';
 import { CARD_VERSION } from './const';
 import { localize } from './localize/localize';
 import { SimplyMagicAreaCardEditor } from './editor';
+import parseAspectRatio, { blankBeforeUnit, isUnavailableState } from './internal/util';
+import { subscribeAreaRegistry } from './internal/area_registry';
+import { subscribeDeviceRegistry } from './internal/device_registry';
+import { subscribeEntityRegistry } from './internal/entity_registry';
+import { SubscribeMixin } from './internal/subscribe_mixin';
+
+export const DEFAULT_ASPECT_RATIO = '16:9';
+
+const SENSOR_DOMAINS = ['sensor'];
+
+const ALERT_DOMAINS = ['binary_sensor'];
+
+const TOGGLE_DOMAINS = ['light', 'switch', 'fan'];
+
+const OTHER_DOMAINS = ['camera'];
+
+export const DEVICE_CLASSES = {
+  sensor: ['temperature', 'humidity'],
+  binary_sensor: ['motion', 'moisture'],
+};
+
+const DOMAIN_ICONS = {
+  light: { on: mdiLightbulbMultiple, off: mdiLightbulbMultipleOff },
+  switch: { on: mdiToggleSwitch, off: mdiToggleSwitchOff },
+  fan: { on: mdiFan, off: mdiFanOff },
+  binary_sensor: {
+    motion: mdiRun,
+    moisture: mdiWaterAlert,
+  },
+};
 
 /* eslint no-console: 0 */
 console.info(
@@ -34,7 +87,7 @@ console.info(
 
 // The simply magic areas card.
 @customElement('simply-magic-area-card')
-export class SimplyMagicAreaCard extends LitElement {
+export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements LovelaceCard {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import('./editor');
     return document.createElement('simply-magic-area-card-editor') as SimplyMagicAreaCardEditor;
@@ -48,10 +101,134 @@ export class SimplyMagicAreaCard extends LitElement {
   // https://lit.dev/docs/components/properties/
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @state() private config!: SimplyMagicCardConfig;
+  @state() private _config!: SimplyMagicCardConfig;
+
+  @state() private _entities?: EntityRegistryEntry[];
+
+  @state() private _devices?: DeviceRegistryEntry[];
+
+  @state() private _areas?: AreaRegistryEntry[];
+
+  private _deviceClasses: { [key: string]: string[] } = DEVICE_CLASSES;
+
+  private _ratio: {
+    w: number;
+    h: number;
+  } | null = null;
+
+  private _entitiesByDomain = memoizeOne(
+    (
+      areaId: string,
+      devicesInArea: Set<string>,
+      registryEntities: EntityRegistryEntry[],
+      deviceClasses: { [key: string]: string[] },
+      states: HomeAssistant['states'],
+    ) => {
+      const entitiesInArea = registryEntities
+        .filter(
+          (entry) =>
+            !entry.entity_category &&
+            !entry.hidden_by &&
+            (entry.area_id ? entry.area_id === areaId : entry.device_id && devicesInArea.has(entry.device_id)),
+        )
+        .map((entry) => entry.entity_id);
+
+      const entitiesByDomain: { [domain: string]: HassEntity[] } = {};
+
+      for (const entity of entitiesInArea) {
+        const domain = computeDomain(entity);
+        if (
+          !TOGGLE_DOMAINS.includes(domain) &&
+          !SENSOR_DOMAINS.includes(domain) &&
+          !ALERT_DOMAINS.includes(domain) &&
+          !OTHER_DOMAINS.includes(domain)
+        ) {
+          continue;
+        }
+        const stateObj: HassEntity | undefined = states[entity];
+
+        if (!stateObj) {
+          continue;
+        }
+
+        if (
+          (SENSOR_DOMAINS.includes(domain) || ALERT_DOMAINS.includes(domain)) &&
+          !deviceClasses[domain].includes(stateObj.attributes.device_class || '')
+        ) {
+          continue;
+        }
+
+        if (!(domain in entitiesByDomain)) {
+          entitiesByDomain[domain] = [];
+        }
+        entitiesByDomain[domain].push(stateObj);
+      }
+
+      return entitiesByDomain;
+    },
+  );
+
+  private _isOn(domain: string, deviceClass?: string): HassEntity | undefined {
+    const entities = this._entitiesByDomain(
+      this._config!.area ?? '',
+      this._devicesInArea(this._config!.area, this._devices!),
+      this._entities!,
+      this._deviceClasses,
+      this.hass.states,
+    )[domain];
+    if (!entities) {
+      return undefined;
+    }
+    return (deviceClass ? entities.filter((entity) => entity.attributes.device_class === deviceClass) : entities).find(
+      (entity) => !isUnavailableState(entity.state) && !STATES_OFF.includes(entity.state),
+    );
+  }
+
+  private _average(domain: string, deviceClass?: string): string | undefined {
+    const entities = this._entitiesByDomain(
+      this._config!.area ?? '',
+      this._devicesInArea(this._config!.area, this._devices!),
+      this._entities!,
+      this._deviceClasses,
+      this.hass.states,
+    )[domain].filter((entity) => (deviceClass ? entity.attributes.device_class === deviceClass : true));
+    if (!entities) {
+      return undefined;
+    }
+    let uom;
+    const values = entities.filter((entity) => {
+      if (!isNumericState(entity) || isNaN(Number(entity.state))) {
+        return false;
+      }
+      if (!uom) {
+        uom = entity.attributes.unit_of_measurement;
+        return true;
+      }
+      return entity.attributes.unit_of_measurement === uom;
+    });
+    if (!values.length) {
+      return undefined;
+    }
+    const sum = values.reduce((total, entity) => total + Number(entity.state), 0);
+    return `${formatNumber(sum / values.length, this.hass!.locale, {
+      maximumFractionDigits: 1,
+    })}${uom ? blankBeforeUnit(uom, this.hass!.locale) : ''}${uom || ''}`;
+  }
+
+  private _area = memoizeOne(
+    (areaId: string | undefined, areas: AreaRegistryEntry[]) => areas.find((area) => area.area_id === areaId) || null,
+  );
+
+  private _devicesInArea = memoizeOne(
+    (areaId: string | undefined, devices: DeviceRegistryEntry[]) =>
+      new Set(areaId ? devices.filter((device) => device.area_id === areaId).map((device) => device.id) : []),
+  );
+
+  public getCardSize(): number {
+    return 3;
+  }
 
   public setConfig(config: SimplyMagicCardConfig): void {
-    // TODO Check for required fields and that they are of the proper format
     if (!config) {
       throw new Error(localize('common.invalid_configuration'));
     }
@@ -60,7 +237,15 @@ export class SimplyMagicAreaCard extends LitElement {
       getLovelace().setEditMode(true);
     }
 
-    this.config = {
+    this._deviceClasses = { ...DEVICE_CLASSES };
+    if (config.sensor_classes) {
+      this._deviceClasses.sensor = config.sensor_classes;
+    }
+    if (config.alert_classes) {
+      this._deviceClasses.binary_sensor = config.alert_classes;
+    }
+
+    this._config = {
       name: 'SimplyMagic',
       ...config,
     };
@@ -68,37 +253,321 @@ export class SimplyMagicAreaCard extends LitElement {
 
   // https://lit.dev/docs/components/lifecycle/#reactive-update-cycle-performing
   protected shouldUpdate(changedProps: PropertyValues): boolean {
-    if (!this.config) {
+    if (changedProps.has('_config') || !this._config) {
+      return true;
+    }
+
+    if (changedProps.has('_devicesInArea') || changedProps.has('_areas') || changedProps.has('_entities')) {
+      return true;
+    }
+
+    if (!changedProps.has('hass')) {
       return false;
     }
 
-    return hasConfigOrEntityChanged(this, changedProps, false);
+    const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+
+    if (!oldHass || oldHass.themes !== this.hass!.themes || oldHass.locale !== this.hass!.locale) {
+      return true;
+    }
+
+    if (!this._devices || !this._devicesInArea(this._config.area, this._devices) || !this._entities) {
+      return false;
+    }
+
+    const entities = this._entitiesByDomain(
+      this._config.area ?? '',
+      this._devicesInArea(this._config.area, this._devices),
+      this._entities,
+      this._deviceClasses,
+      this.hass.states,
+    );
+
+    for (const domainEntities of Object.values(entities)) {
+      for (const stateObj of domainEntities) {
+        if (oldHass!.states[stateObj.entity_id] !== stateObj) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  public willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('_config') || this._ratio === null) {
+      this._ratio = this._config?.aspect_ratio ? parseAspectRatio(this._config?.aspect_ratio) : null;
+
+      if (this._ratio === null || this._ratio.w <= 0 || this._ratio.h <= 0) {
+        this._ratio = parseAspectRatio(DEFAULT_ASPECT_RATIO);
+      }
+    }
+  }
+
+  public hassSubscribe(): UnsubscribeFunc[] {
+    return [
+      subscribeAreaRegistry(this.hass!.connection as any as Connection, (areas) => {
+        this._areas = areas;
+      }),
+      subscribeDeviceRegistry(this.hass!.connection as any as Connection, (devices) => {
+        this._devices = devices;
+      }),
+      subscribeEntityRegistry(this.hass!.connection as any as Connection, (entries) => {
+        this._entities = entries;
+      }),
+    ];
   }
 
   // https://lit.dev/docs/components/rendering/
   protected render(): TemplateResult | void {
+    const entitiesByDomain = this._entitiesByDomain(
+      this._config.area ?? '',
+      this._devicesInArea(this._config.area, this._devices ?? []),
+      this._entities ?? [],
+      this._deviceClasses,
+      this.hass.states,
+    );
+    const area = this._area(this._config.area, this._areas ?? []);
+
+    if (area === null) {
+      return html`
+        <hui-warning> ${this.hass.localize('ui.card.area.area_not_found')} ${this._config.area} </hui-warning>
+      `;
+    }
+
+    const sensors: TemplateResult[] = [];
+    SENSOR_DOMAINS.forEach((domain) => {
+      if (!(domain in entitiesByDomain)) {
+        return;
+      }
+      this._deviceClasses[domain].forEach((deviceClass) => {
+        if (entitiesByDomain[domain].some((entity) => entity.attributes.device_class === deviceClass)) {
+          sensors.push(html`
+            <div class="sensor">
+              <ha-domain-icon .hass=${this.hass} .domain=${domain} .deviceClass=${deviceClass}></ha-domain-icon>
+              ${this._average(domain, deviceClass)}
+            </div>
+          `);
+        }
+      });
+    });
+
+    let cameraEntityId: string | undefined;
+    if (this._config.show_camera && 'camera' in entitiesByDomain) {
+      cameraEntityId = entitiesByDomain.camera[0].entity_id;
+    }
+
+    const imageClass = area.picture || cameraEntityId;
     return html`
       <ha-card
-        .header=${this.config.area || 'Undefined'}
-        @action=${this._handleAction}
-        .actionHandler=${actionHandler({
-          hasHold: hasAction(this.config.hold_action),
-          hasDoubleClick: hasAction(this.config.double_tap_action),
+        class=${imageClass ? 'image' : ''}
+        style=${styleMap({
+          paddingBottom: imageClass ? '0' : `${((100 * this._ratio!.h) / this._ratio!.w).toFixed(2)}%`,
         })}
-        tabindex="0"
-        .label=${`SimplyMagic: ${this.config.area || 'No Area Defined'}`}
-      ></ha-card>
+      >
+        ${area.picture || cameraEntityId
+          ? html`
+              <hui-image
+                .config=${this._config}
+                .hass=${this.hass}
+                .image=${area.picture ? area.picture : undefined}
+                .cameraImage=${cameraEntityId}
+                .cameraView=${this._config.camera_view}
+                .aspectRatio=${this._config.aspect_ratio || DEFAULT_ASPECT_RATIO}
+              ></hui-image>
+            `
+          : area.icon
+          ? html`
+              <div class="icon-container">
+                <ha-icon icon=${area.icon}></ha-icon>
+              </div>
+            `
+          : nothing}
+
+        <div
+          class="container ${classMap({
+            navigate: this._config.navigation_path !== undefined,
+          })}"
+          @click=${this._handleNavigation}
+        >
+          <div class="alerts">
+            ${ALERT_DOMAINS.map((domain) => {
+              if (!(domain in entitiesByDomain)) {
+                return nothing;
+              }
+              return this._deviceClasses[domain].map((deviceClass) => {
+                const entity = this._isOn(domain, deviceClass);
+                return entity
+                  ? html` <ha-state-icon class="alert" .hass=${this.hass} .stateObj=${entity}></ha-state-icon> `
+                  : nothing;
+              });
+            })}
+          </div>
+          <div class="bottom">
+            <div>
+              <div class="name">${area.name}</div>
+              ${sensors.length ? html`<div class="sensors">${sensors}</div>` : ''}
+            </div>
+            <div class="buttons">
+              ${TOGGLE_DOMAINS.map((domain) => {
+                if (!(domain in entitiesByDomain)) {
+                  return '';
+                }
+
+                const on = this._isOn(domain)!;
+                return TOGGLE_DOMAINS.includes(domain)
+                  ? html`
+                      <ha-icon-button
+                        class=${on ? 'on' : 'off'}
+                        .path=${DOMAIN_ICONS[domain][on ? 'on' : 'off']}
+                        .domain=${domain}
+                        @click=${this._toggle}
+                      >
+                      </ha-icon-button>
+                    `
+                  : '';
+              })}
+            </div>
+          </div>
+        </div>
+      </ha-card>
     `;
   }
 
+  private _handleNavigation() {
+    if (this._config!.navigation_path) {
+      navigate(this, this._config!.navigation_path);
+    }
+  }
+
+  private _toggle(ev: Event) {
+    ev.stopPropagation();
+    const domain = (ev.currentTarget as any).domain as string;
+    if (TOGGLE_DOMAINS.includes(domain)) {
+      this.hass.callService(domain, this._isOn(domain) ? 'turn_off' : 'turn_on', undefined, {
+        area_id: this._config!.area,
+      });
+    }
+    forwardHaptic('light');
+  }
+
   private _handleAction(ev: ActionHandlerEvent): void {
-    if (this.hass && this.config && ev.detail.action) {
-      handleAction(this, this.hass, this.config, ev.detail.action);
+    if (this.hass && this._config && ev.detail.action) {
+      handleAction(this, this.hass, this._config, ev.detail.action);
     }
   }
 
   // https://lit.dev/docs/components/styles/
   static get styles(): CSSResultGroup {
-    return css``;
+    return css`
+      ha-card {
+        overflow: hidden;
+        position: relative;
+        background-size: cover;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(0, rgba(33, 33, 33, 0.9) 0%, rgba(33, 33, 33, 0) 45%);
+      }
+
+      ha-card:not(.image) .container::before {
+        position: absolute;
+        content: '';
+        width: 100%;
+        height: 100%;
+        background-color: var(--sidebar-selected-icon-color);
+        opacity: 0.12;
+      }
+
+      .icon-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .icon-container ha-icon {
+        --mdc-icon-size: 60px;
+        color: var(--sidebar-selected-icon-color);
+      }
+
+      .sensors {
+        color: #e3e3e3;
+        font-size: 16px;
+        --mdc-icon-size: 24px;
+        opacity: 0.6;
+        margin-top: 8px;
+      }
+
+      .sensor {
+        white-space: nowrap;
+        float: left;
+        margin-right: 4px;
+        margin-inline-end: 4px;
+        margin-inline-start: initial;
+      }
+
+      .alerts {
+        padding: 16px;
+      }
+
+      ha-state-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .alerts ha-state-icon {
+        background: var(--accent-color);
+        color: var(--text-accent-color, var(--text-primary-color));
+        padding: 8px;
+        margin-right: 8px;
+        margin-inline-end: 8px;
+        margin-inline-start: initial;
+        border-radius: 50%;
+      }
+
+      .name {
+        color: white;
+        font-size: 24px;
+      }
+
+      .bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+      }
+
+      .navigate {
+        cursor: pointer;
+      }
+
+      ha-icon-button {
+        color: white;
+        background-color: var(--area-button-color, #727272b2);
+        border-radius: 50%;
+        margin-left: 8px;
+        margin-inline-start: 8px;
+        margin-inline-end: initial;
+        --mdc-icon-button-size: 44px;
+      }
+      .on {
+        color: var(--state-light-active-color);
+      }
+    `;
   }
 }
