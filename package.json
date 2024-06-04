@@ -15,11 +15,41 @@
   "author": "David Bennett <pinkfishfrog@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "homeassistant-frontend": "file:homeassistant-frontend",
+    "@material/mwc-base": "0.27.0",
+    "@material/mwc-button": "0.27.0",
+    "@material/mwc-checkbox": "0.27.0",
+    "@material/mwc-dialog": "0.27.0",
+    "@material/mwc-drawer": "0.27.0",
+    "@material/mwc-fab": "0.27.0",
+    "@material/mwc-floating-label": "0.27.0",
+    "@material/mwc-formfield": "0.27.0",
+    "@material/mwc-icon-button": "0.27.0",
+    "@material/mwc-linear-progress": "0.27.0",
+    "@material/mwc-list": "0.27.0",
+    "@material/mwc-menu": "0.27.0",
+    "@material/mwc-radio": "0.27.0",
+    "@material/mwc-select": "0.27.0",
+    "@material/mwc-snackbar": "0.27.0",
+    "@material/mwc-switch": "0.27.0",
+    "@material/mwc-tab": "0.27.0",
+    "@material/mwc-tab-bar": "0.27.0",
+    "@material/mwc-textarea": "0.27.0",
+    "@material/mwc-textfield": "0.27.0",
+    "@material/mwc-top-app-bar": "0.27.0",
+    "@material/mwc-top-app-bar-fixed": "0.27.0",
     "custom-card-helpers": "^1.9.0",
     "home-assistant-js-websocket": "^9.3.0",
-    "lit": "^2.8.0"
+    "lit": "^2.8.0",
+    "@lit-labs/context": "0.4.1",
+    "@lit-labs/motion": "1.0.7",
+    "@lit-labs/observers": "2.0.2",
+    "@lit-labs/virtualizer": "2.0.12",
+    "hls.js": "patch:hls.js@npm%3A1.5.7#~/homeassistant-frontend/.yarn/patches/hls.js-npm-1.5.7-f5bbd3d060.patch"
   },
   "devDependencies": {
+    "chai": "5.1.1",
+    "@types/mocha": "10.0.6",
     "@babel/core": "^7.15.0",
     "@babel/plugin-proposal-decorators": "^7.24.6",
     "@eslint/js": "^9.4.0",
@@ -47,6 +77,9 @@
   "resolutions": {
     "@material/mwc-button@^0.25.3": "^0.27.0",
     "lit": "2.8.0",
-    "@lit/reactive-element": "1.6.3"
-  }
+    "@lit/reactive-element": "1.6.3",
+    "sortablejs@1.15.2": "patch:sortablejs@npm%3A1.15.2#~/homeassistant-frontend/.yarn/patches/sortablejs-npm-1.15.2-73347ae85a.patch",
+    "leaflet-draw@1.0.4": "patch:leaflet-draw@npm%3A1.0.4#./homeassistant-frontend/.yarn/patches/leaflet-draw-npm-1.0.4-0ca0ebcf65.patch"
+  },
+  "packageManager": "yarn@4.2.2"
 }

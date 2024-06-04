@@ -1,10 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { LitElement, html, TemplateResult, css, CSSResultGroup } from 'lit';
 import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
+import "@material/mwc-switch/mwc-switch";
+import "@material/mwc-textfield/mwc-textfield";
+import "@material/mwc-formfield/mwc-formfield";
+import "../homeassistant-frontend/src/components/entity/ha-entity-picker";
 
-import { ScopedRegistryHost } from '@lit-labs/scoped-registry-mixin';
 import { BoilerplateCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
+import { PluginStyles } from './styles/styles';
 
 @customElement('boilerplate-card-editor')
 export class BoilerplateCardEditor extends LitElement implements LovelaceCardEditor {
@@ -15,15 +19,6 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
   @state() private _helpers?: any;
 
   private _initialized = false;
-
-  /*
-  static elementDefinitions = {
-    ...textfieldDefinition,
-    ...selectDefinition,
-    ...switchDefinition,
-    ...formfieldDefinition,
-  };
-  */
 
   public setConfig(config: BoilerplateCardConfig): void {
     this._config = config;
@@ -130,18 +125,22 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     fireEvent(this, 'config-changed', { config: this._config });
   }
 
-
-  static styles: CSSResultGroup = css`
-    mwc-select,
-    mwc-textfield {
-      margin-bottom: 16px;
-      display: block;
-    }
-    mwc-formfield {
-      padding-bottom: 8px;
-    }
-    mwc-switch {
-      --mdc-theme-secondary: var(--switch-checked-color);
-    }
-  `;
+  static get styles() {
+    return [
+      PluginStyles,
+      css`
+        mwc-select,
+        mwc-textfield {
+          margin-bottom: 16px;
+          display: block;
+        }
+        mwc-formfield {
+          padding-bottom: 8px;
+        }
+        mwc-switch {
+          --mdc-theme-secondary: var(--switch-checked-color);
+        }
+      `,
+    ];
+  }
 }

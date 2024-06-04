@@ -24,6 +24,9 @@ export default {
     json(),
     babel({
       exclude: 'node_modules/**',
+      format: 'es',
+      include: 'src/**',
+      exclude: 'homeassistant-frontend/**',
       babelHelpers: 'bundled',
     }),
     terser(),
