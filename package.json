@@ -21,7 +21,7 @@
     "@lit-labs/context": "0.4.1",
     "@lit-labs/motion": "1.0.7",
     "@lit-labs/observers": "2.0.2",
-    "@lit-labs/virtualizer": "2.0.12",
+    "@lit-labs/virtualizer": "2.0.12"
   },
   "devDependencies": {
     "@babel/core": "^7.15.0",
@@ -50,7 +50,7 @@
   },
   "resolutions": {
     "lit": "2.8.0",
-    "@lit/reactive-element": "1.6.3",
+    "@lit/reactive-element": "1.6.3"
   },
   "packageManager": "yarn@4.2.2"
 }

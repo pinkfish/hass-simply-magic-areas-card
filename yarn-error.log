@@ -14,7 +14,7 @@ Platform:
   linux x64
 
 Trace: 
-  SyntaxError: /workspaces/hass-simply-magic-areas-card/package.json: Expected double-quoted property name in JSON at position 673 (line 25 column 3)
+  SyntaxError: /workspaces/hass-simply-magic-areas-card/package.json: Expected double-quoted property name in JSON at position 1600 (line 54 column 3)
       at JSON.parse (<anonymous>)
       at /opt/yarn-v1.22.19/lib/cli.js:1629:59
       at Generator.next (<anonymous>)
@@ -45,7 +45,7 @@ npm manifest:
       "@lit-labs/context": "0.4.1",
       "@lit-labs/motion": "1.0.7",
       "@lit-labs/observers": "2.0.2",
-      "@lit-labs/virtualizer": "2.0.12",
+      "@lit-labs/virtualizer": "2.0.12"
     },
     "devDependencies": {
       "@babel/core": "^7.15.0",

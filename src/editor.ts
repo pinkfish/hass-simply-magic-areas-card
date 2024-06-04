@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { LitElement, html, TemplateResult, css, CSSResultGroup } from 'lit';
+import { LitElement, html, TemplateResult, css } from 'lit';
 import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
 
 import { BoilerplateCardConfig } from './types';
@@ -55,35 +55,43 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     const entities = Object.keys(this.hass.states);
 
     return html`
-      <ha-entity-picker
+      <ha-select
         .hass=${this.hass}
         label="Entity (Required)"
         .value=${this._entity}
         .configValue=${'entity'}
+        required=true
         @change=${this._valueChanged}
         @closed=${(ev) => ev.stopPropagation()}
       >
-      </ha-entity-picker>
-      <mwc-textfield
+      ${entities.map(
+          (entity) => html`
+            <mwc-list-item .value=${entity} 
+              >${entity}</mwc-list-item
+            >
+          `
+        )}
+      </ha-select>
+      <ha-textfield
         label="Name (Optional)"
         .value=${this._name}
         .configValue=${'name'}
         @input=${this._valueChanged}
-      ></mwc-textfield>
-      <mwc-formfield .label=${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}>
-        <mwc-switch
+      ></ha-textfield>
+      <ha-formfield .label=${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}>
+        <ha-checkbox
           .checked=${this._show_warning !== false}
           .configValue=${'show_warning'}
           @change=${this._valueChanged}
-        ></mwc-switch>
-      </mwc-formfield>
-      <mwc-formfield .label=${`Toggle error ${this._show_error ? 'off' : 'on'}`}>
-        <mwc-switch
+        ></ha-checkbox>
+      </ha-formfield>
+      <ha-formfield .label=${`Toggle error ${this._show_error ? 'off' : 'on'}`}>
+        <ha-checkbox
           .checked=${this._show_error !== false}
           .configValue=${'show_error'}
           @change=${this._valueChanged}
-        ></mwc-switch>
-      </mwc-formfield>
+        ></ha-checkbox>
+      </ha-formfield>
     `;
   }
 
@@ -125,6 +133,7 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     return [
       PluginStyles,
       css`
+        ha-select,
         mwc-select,
         mwc-textfield {
           margin-bottom: 16px;
