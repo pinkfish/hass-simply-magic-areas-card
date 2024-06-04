@@ -5,11 +5,6 @@ import babel from '@rollup/plugin-babel';
 import terser from '@rollup/plugin-terser';
 import serve from 'rollup-plugin-serve';
 import json from '@rollup/plugin-json';
-import ignore from 'rollup-plugin-ignore';
-import { ignoreSwitchFiles } from './elements/ignore/switch.mjs';
-import { ignoreSelectFiles } from './elements/ignore/select.mjs';
-import { ignoreTextfieldFiles } from './elements/ignore/textfield.mjs';
-import { ignoreFormFieldFiles } from './elements/ignore/formfield.mjs';
 
 const dev = process.env.ROLLUP_WATCH;
 
@@ -34,13 +29,6 @@ const plugins = [
   }),
   dev && serve(serveopts),
   !dev && terser(),
-  ignore([
-    '@material/web',
-    ...ignoreSelectFiles,
-    ...ignoreSwitchFiles,
-    ...ignoreTextfieldFiles,
-    ...ignoreFormFieldFiles,
-  ], { commonjsBugFix: true }),
 ];
 
 export default [
