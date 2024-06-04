@@ -38,6 +38,10 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     return this._config?.entity || '';
   }
 
+  get _area(): string {
+    return this._config?.area || '';
+  }
+
   get _show_warning(): boolean {
     return this._config?.show_warning || false;
   }
@@ -60,18 +64,22 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
         label="Entity (Required)"
         .value=${this._entity}
         .configValue=${'entity'}
-        required=true
+        required="true"
         @change=${this._valueChanged}
         @closed=${(ev) => ev.stopPropagation()}
       >
-      ${entities.map(
-          (entity) => html`
-            <mwc-list-item .value=${entity} 
-              >${entity}</mwc-list-item
-            >
-          `
-        )}
+        ${entities.map((entity) => html` <mwc-list-item .value=${entity}>${entity}</mwc-list-item> `)}
       </ha-select>
+      <ha-area-picker
+        .curValue=${this._area}
+        no-add
+        .hass=${this.hass}
+        .value=${this._area}
+        .configValue=${'area'}
+        label="Area to display"
+        @value-changed=${this._valueChanged}
+      >
+      </ha-area-picker>
       <ha-textfield
         label="Name (Optional)"
         .value=${this._name}
