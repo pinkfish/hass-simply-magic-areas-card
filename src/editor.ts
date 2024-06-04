@@ -2,20 +2,20 @@
 import { LitElement, html, TemplateResult, css } from 'lit';
 import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
 
-import { BoilerplateCardConfig } from './types';
+import { SimplyMagicCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
 
-@customElement('boilerplate-card-editor')
-export class BoilerplateCardEditor extends LitElement implements LovelaceCardEditor {
+@customElement('simply-magic-area-card-editor')
+export class SimplyMagicAreaCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  @state() private _config?: BoilerplateCardConfig;
+  @state() private _config?: SimplyMagicCardConfig;
 
   @state() private _helpers?: any;
 
   private _initialized = false;
 
-  public setConfig(config: BoilerplateCardConfig): void {
+  public setConfig(config: SimplyMagicCardConfig): void {
     this._config = config;
 
     this.loadCardHelpers();
@@ -29,24 +29,8 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     return true;
   }
 
-  get _name(): string {
-    return this._config?.name || '';
-  }
-
-  get _entity(): string {
-    return this._config?.entity || '';
-  }
-
   get _area(): string {
     return this._config?.area || '';
-  }
-
-  get _show_warning(): boolean {
-    return this._config?.show_warning || false;
-  }
-
-  get _show_error(): boolean {
-    return this._config?.show_error || false;
   }
 
   protected render(): TemplateResult | void {
@@ -54,21 +38,7 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
       return html``;
     }
 
-    // You can restrict on domain type
-    const entities = Object.keys(this.hass.states);
-
     return html`
-      <ha-select
-        .hass=${this.hass}
-        label="Entity (Required)"
-        .value=${this._entity}
-        .configValue=${'entity'}
-        required="true"
-        @change=${this._valueChanged}
-        @closed=${(ev) => ev.stopPropagation()}
-      >
-        ${entities.map((entity) => html` <mwc-list-item .value=${entity}>${entity}</mwc-list-item> `)}
-      </ha-select>
       <ha-area-picker
         .curValue=${this._area}
         no-add
@@ -79,26 +49,6 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
         @value-changed=${this._valueChanged}
       >
       </ha-area-picker>
-      <ha-textfield
-        label="Name (Optional)"
-        .value=${this._name}
-        .configValue=${'name'}
-        @input=${this._valueChanged}
-      ></ha-textfield>
-      <ha-formfield .label=${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}>
-        <ha-checkbox
-          .checked=${this._show_warning !== false}
-          .configValue=${'show_warning'}
-          @change=${this._valueChanged}
-        ></ha-checkbox>
-      </ha-formfield>
-      <ha-formfield .label=${`Toggle error ${this._show_error ? 'off' : 'on'}`}>
-        <ha-checkbox
-          .checked=${this._show_error !== false}
-          .configValue=${'show_error'}
-          @change=${this._valueChanged}
-        ></ha-checkbox>
-      </ha-formfield>
     `;
   }
 
@@ -140,16 +90,9 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     return [
       css`
         ha-select,
-        mwc-select,
-        mwc-textfield {
+        mwc-select {
           margin-bottom: 16px;
           display: block;
-        }
-        mwc-formfield {
-          padding-bottom: 8px;
-        }
-        mwc-switch {
-          --mdc-theme-secondary: var(--switch-checked-color);
         }
       `,
     ];
