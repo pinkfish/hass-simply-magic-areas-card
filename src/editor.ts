@@ -4,7 +4,6 @@ import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helper
 
 import { BoilerplateCardConfig } from './types';
 import { customElement, property, state } from 'lit/decorators.js';
-import { PluginStyles } from './styles/styles';
 
 @customElement('boilerplate-card-editor')
 export class BoilerplateCardEditor extends LitElement implements LovelaceCardEditor {
@@ -139,7 +138,6 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
 
   static get styles() {
     return [
-      PluginStyles,
       css`
         ha-select,
         mwc-select,
