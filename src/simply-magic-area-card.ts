@@ -58,7 +58,7 @@ const SENSOR_DOMAINS = ['sensor'];
 
 const SELECT_DOMAIN = 'select';
 
-const ALERT_DOMAINS = ['binary_sensor', SELECT_DOMAIN];
+const ALERT_DOMAINS = [SELECT_DOMAIN, 'binary_sensor'];
 
 const TOGGLE_DOMAINS = ['light', 'fan'];
 
@@ -205,18 +205,20 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
   }
 
   private _simplyMagicState(): SimplyMagicStates | undefined {
+    if (!this._config) {
+      return undefined;
+    }
     const entities = this._entitiesByDomain(
       this._config!.area ?? '',
-      this._devicesInArea(this._config!.area, this._devices!),
-      this._simplyMagicDevice(this._config!.area, this._devices!),
-      this._entities!,
+      this._devicesInArea(this._config!.area, this._devices ?? []),
+      this._simplyMagicDevice(this._config!.area, this._devices ?? []),
+      this._entities ?? [],
       this._deviceClasses,
       this.hass.states,
     );
     if (!entities || !(SELECT_DOMAIN in entities.entitiesByDomain)) {
       return undefined;
     }
-    const toCheck: HassEntity[] = [];
     // if we have a magic entity use that for the device type.
     const magicEntity = entities.magicByDomain[SELECT_DOMAIN];
     if (magicEntity.length < 1) {
@@ -228,8 +230,8 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
   private _isOn(domain: string, deviceClass?: string): HassEntity | undefined {
     const entities = this._entitiesByDomain(
       this._config!.area ?? '',
-      this._devicesInArea(this._config!.area, this._devices!),
-      this._simplyMagicDevice(this._config!.area, this._devices!),
+      this._devicesInArea(this._config!.area, this._devices! ?? []),
+      this._simplyMagicDevice(this._config!.area, this._devices! ?? []),
       this._entities!,
       this._deviceClasses,
       this.hass.states,
@@ -372,7 +374,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     const entities = this._entitiesByDomain(
       this._config.area ?? '',
       this._devicesInArea(this._config.area, this._devices),
-      this._simplyMagicDevice(this._config!.area, this._devices!),
+      this._simplyMagicDevice(this._config.area, this._devices),
       this._entities,
       this._deviceClasses,
       this.hass.states,
@@ -418,7 +420,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     const entitiesByDomain = this._entitiesByDomain(
       this._config.area ?? '',
       this._devicesInArea(this._config.area, this._devices ?? []),
-      this._simplyMagicDevice(this._config!.area, this._devices!),
+      this._simplyMagicDevice(this._config.area, this._devices ?? []),
       this._entities ?? [],
       this._deviceClasses,
       this.hass.states,
@@ -441,7 +443,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
         if (entitiesByDomain.magicByDomain[domain].some((entity) => entity.attributes.device_class == deviceClass)) {
           sensors.push(html`
             <div class="sensor">
-              <ha-icon .hass=${this.hass} .domain=${domain} .deviceClass=${deviceClass}></ha-icon>
+              <ha-domain-icon .hass=${this.hass} .domain=${domain} .deviceClass=${deviceClass}></ha-domain-icon>
               ${this._average(domain, deviceClass)}
             </div>
           `);
@@ -499,7 +501,9 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
           <div class="alerts">
             ${ALERT_DOMAINS.map((domain) => {
               if (domain == SELECT_DOMAIN) {
-                return html` <ha-state-icon class="alert" .hass=${this.hass} .stateObj=${entity}></ha-state-icon>`;
+                console.log(this._stateIcon(this._simplyMagicState()));
+                const magicState = this._simplyMagicState();
+                return html` <ha-svg-icon .path=${this._stateIcon(magicState)} class="select"></ha-svg-icon> `;
               }
               if (!(domain in entitiesByDomain.entitiesByDomain)) {
                 return nothing;
@@ -630,6 +634,13 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
 
       .alerts {
         padding: 16px;
+      }
+
+      .select {
+        border-radius: 50%;
+        background-color: green;
+        padding: 8px;
+        color: white;
       }
 
       ha-state-icon {
