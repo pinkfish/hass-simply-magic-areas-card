@@ -1,13 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
+  mdiAlert,
   mdiFan,
   mdiFanOff,
+  mdiHome,
+  mdiHomeOff,
+  mdiHomePlus,
   mdiLightbulbMultiple,
   mdiLightbulbMultipleOff,
   mdiRun,
+  mdiSleep,
   mdiToggleSwitch,
   mdiToggleSwitchOff,
   mdiWaterAlert,
+  mdiWeatherSunny,
 } from '@mdi/js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -44,16 +50,23 @@ import { subscribeAreaRegistry } from './internal/area_registry';
 import { subscribeDeviceRegistry } from './internal/device_registry';
 import { subscribeEntityRegistry } from './internal/entity_registry';
 import { SubscribeMixin } from './internal/subscribe_mixin';
+import { SimplyMagicStates } from './internal/simply_magic';
 
 export const DEFAULT_ASPECT_RATIO = '16:9';
 
 const SENSOR_DOMAINS = ['sensor'];
 
-const ALERT_DOMAINS = ['binary_sensor'];
+const SELECT_DOMAIN = 'select';
 
-const TOGGLE_DOMAINS = ['light', 'switch', 'fan'];
+const ALERT_DOMAINS = ['binary_sensor', SELECT_DOMAIN];
+
+const TOGGLE_DOMAINS = ['light', 'fan'];
 
 const OTHER_DOMAINS = ['camera'];
+
+const SIMPLY_MAGIC_AREA_MANUFACTURER = 'Simply Magic Areas';
+
+const SWITCH_DOMAINS = ['switch'];
 
 export const DEVICE_CLASSES = {
   sensor: ['temperature', 'humidity'],
@@ -120,32 +133,33 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     (
       areaId: string,
       devicesInArea: Set<string>,
+      simplyMagicDevicesInArea: Set<string>,
       registryEntities: EntityRegistryEntry[],
       deviceClasses: { [key: string]: string[] },
       states: HomeAssistant['states'],
     ) => {
-      const entitiesInArea = registryEntities
-        .filter(
-          (entry) =>
-            !entry.entity_category &&
-            !entry.hidden_by &&
-            (entry.area_id ? entry.area_id === areaId : entry.device_id && devicesInArea.has(entry.device_id)),
-        )
-        .map((entry) => entry.entity_id);
+      const entitiesInArea = registryEntities.filter(
+        (entry) =>
+          !entry.entity_category &&
+          !entry.hidden_by &&
+          (entry.area_id ? entry.area_id === areaId : entry.device_id && devicesInArea.has(entry.device_id)),
+      );
 
       const entitiesByDomain: { [domain: string]: HassEntity[] } = {};
+      const magicByDomain: { [domain: string]: HassEntity[] } = {};
 
       for (const entity of entitiesInArea) {
-        const domain = computeDomain(entity);
+        const domain = computeDomain(entity.entity_id);
         if (
           !TOGGLE_DOMAINS.includes(domain) &&
           !SENSOR_DOMAINS.includes(domain) &&
           !ALERT_DOMAINS.includes(domain) &&
-          !OTHER_DOMAINS.includes(domain)
+          !OTHER_DOMAINS.includes(domain) &&
+          !SWITCH_DOMAINS.includes(domain)
         ) {
           continue;
         }
-        const stateObj: HassEntity | undefined = states[entity];
+        const stateObj: HassEntity | undefined = states[entity.entity_id];
 
         if (!stateObj) {
           continue;
@@ -153,6 +167,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
 
         if (
           (SENSOR_DOMAINS.includes(domain) || ALERT_DOMAINS.includes(domain)) &&
+          domain !== SELECT_DOMAIN &&
           !deviceClasses[domain].includes(stateObj.attributes.device_class || '')
         ) {
           continue;
@@ -160,43 +175,111 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
 
         if (!(domain in entitiesByDomain)) {
           entitiesByDomain[domain] = [];
+          magicByDomain[domain] = [];
         }
         entitiesByDomain[domain].push(stateObj);
+        if (simplyMagicDevicesInArea.has(entity.device_id ?? '')) {
+          magicByDomain[domain].push(stateObj);
+        }
       }
 
-      return entitiesByDomain;
+      return { entitiesByDomain, magicByDomain };
     },
   );
+
+  private _stateIcon(state?: SimplyMagicStates) {
+    switch (state) {
+      case SimplyMagicStates.Clear:
+        return mdiHomeOff;
+      case SimplyMagicStates.Sleep:
+        return mdiSleep;
+      case SimplyMagicStates.Occupied:
+        return mdiHome;
+      case SimplyMagicStates.Bright:
+        return mdiWeatherSunny;
+      case SimplyMagicStates.Accent:
+        return mdiHomePlus;
+      default:
+        return mdiAlert;
+    }
+  }
+
+  private _simplyMagicState(): SimplyMagicStates | undefined {
+    const entities = this._entitiesByDomain(
+      this._config!.area ?? '',
+      this._devicesInArea(this._config!.area, this._devices!),
+      this._simplyMagicDevice(this._config!.area, this._devices!),
+      this._entities!,
+      this._deviceClasses,
+      this.hass.states,
+    );
+    if (!entities || !(SELECT_DOMAIN in entities.entitiesByDomain)) {
+      return undefined;
+    }
+    const toCheck: HassEntity[] = [];
+    // if we have a magic entity use that for the device type.
+    const magicEntity = entities.magicByDomain[SELECT_DOMAIN];
+    if (magicEntity.length < 1) {
+      return undefined;
+    }
+    return magicEntity[0].state as SimplyMagicStates;
+  }
 
   private _isOn(domain: string, deviceClass?: string): HassEntity | undefined {
     const entities = this._entitiesByDomain(
       this._config!.area ?? '',
       this._devicesInArea(this._config!.area, this._devices!),
+      this._simplyMagicDevice(this._config!.area, this._devices!),
       this._entities!,
       this._deviceClasses,
       this.hass.states,
-    )[domain];
-    if (!entities) {
+    );
+    if (!entities || !(domain in entities.entitiesByDomain)) {
       return undefined;
     }
-    return (deviceClass ? entities.filter((entity) => entity.attributes.device_class === deviceClass) : entities).find(
-      (entity) => !isUnavailableState(entity.state) && !STATES_OFF.includes(entity.state),
+    const toCheck: HassEntity[] = [];
+    // if we have a magic entity use that for the device type.
+    const magicEntity = entities.magicByDomain[domain].filter(
+      (entity) => !deviceClass || entity.attributes.device_class === deviceClass,
     );
+    if (magicEntity.length > 0) {
+      toCheck.push(...magicEntity);
+    } else {
+      toCheck.push(
+        ...entities.entitiesByDomain[domain].filter(
+          (entity) => !deviceClass || entity.attributes.device_class === deviceClass,
+        ),
+      );
+    }
+    return toCheck.find((entity) => !isUnavailableState(entity.state) && !STATES_OFF.includes(entity.state));
   }
 
   private _average(domain: string, deviceClass?: string): string | undefined {
     const entities = this._entitiesByDomain(
       this._config!.area ?? '',
       this._devicesInArea(this._config!.area, this._devices!),
+      this._simplyMagicDevice(this._config!.area, this._devices!),
       this._entities!,
       this._deviceClasses,
       this.hass.states,
-    )[domain].filter((entity) => (deviceClass ? entity.attributes.device_class === deviceClass : true));
-    if (!entities) {
+    );
+    if (!entities || !(domain in entities.entitiesByDomain)) {
       return undefined;
     }
     let uom;
-    const values = entities.filter((entity) => {
+    // if we have a magic entity use that for the device type.
+    const toCheck = entities.magicByDomain[domain].filter(
+      (entity) => !deviceClass || entity.attributes.device_class === deviceClass,
+    );
+    if (toCheck.length === 0) {
+      toCheck.push(
+        ...entities.entitiesByDomain[domain].filter(
+          (entity) => !deviceClass || entity.attributes.device_class === deviceClass,
+        ),
+      );
+    }
+
+    const values = entities.entitiesByDomain[domain].filter((entity) => {
       if (!isNumericState(entity) || isNaN(Number(entity.state))) {
         return false;
       }
@@ -222,6 +305,17 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
   private _devicesInArea = memoizeOne(
     (areaId: string | undefined, devices: DeviceRegistryEntry[]) =>
       new Set(areaId ? devices.filter((device) => device.area_id === areaId).map((device) => device.id) : []),
+  );
+
+  private _simplyMagicDevice = memoizeOne(
+    (areaId: string | undefined, devices: DeviceRegistryEntry[]) =>
+      new Set(
+        areaId
+          ? devices
+              .filter((device) => device.area_id === areaId && device.manufacturer === SIMPLY_MAGIC_AREA_MANUFACTURER)
+              .map((device) => device.id)
+          : [],
+      ),
   );
 
   public getCardSize(): number {
@@ -278,13 +372,14 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     const entities = this._entitiesByDomain(
       this._config.area ?? '',
       this._devicesInArea(this._config.area, this._devices),
+      this._simplyMagicDevice(this._config!.area, this._devices!),
       this._entities,
       this._deviceClasses,
       this.hass.states,
     );
 
     for (const domainEntities of Object.values(entities)) {
-      for (const stateObj of domainEntities) {
+      for (const stateObj of domainEntities.entitiesByDomain) {
         if (oldHass!.states[stateObj.entity_id] !== stateObj) {
           return true;
         }
@@ -323,6 +418,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     const entitiesByDomain = this._entitiesByDomain(
       this._config.area ?? '',
       this._devicesInArea(this._config.area, this._devices ?? []),
+      this._simplyMagicDevice(this._config!.area, this._devices!),
       this._entities ?? [],
       this._deviceClasses,
       this.hass.states,
@@ -337,11 +433,21 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
 
     const sensors: TemplateResult[] = [];
     SENSOR_DOMAINS.forEach((domain) => {
-      if (!(domain in entitiesByDomain)) {
+      if (!(domain in entitiesByDomain.entitiesByDomain)) {
         return;
       }
       this._deviceClasses[domain].forEach((deviceClass) => {
-        if (entitiesByDomain[domain].some((entity) => entity.attributes.device_class === deviceClass)) {
+        // If we have a magic entity, use that, otherwise the other ones.
+        if (entitiesByDomain.magicByDomain[domain].some((entity) => entity.attributes.device_class == deviceClass)) {
+          sensors.push(html`
+            <div class="sensor">
+              <ha-icon .hass=${this.hass} .domain=${domain} .deviceClass=${deviceClass}></ha-icon>
+              ${this._average(domain, deviceClass)}
+            </div>
+          `);
+        } else if (
+          entitiesByDomain.entitiesByDomain[domain].some((entity) => entity.attributes.device_class === deviceClass)
+        ) {
           sensors.push(html`
             <div class="sensor">
               <ha-domain-icon .hass=${this.hass} .domain=${domain} .deviceClass=${deviceClass}></ha-domain-icon>
@@ -354,7 +460,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
 
     let cameraEntityId: string | undefined;
     if (this._config.show_camera && 'camera' in entitiesByDomain) {
-      cameraEntityId = entitiesByDomain.camera[0].entity_id;
+      cameraEntityId = entitiesByDomain.entitiesByDomain.camera[0].entity_id;
     }
 
     const imageClass = area.picture || cameraEntityId;
@@ -392,7 +498,10 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
         >
           <div class="alerts">
             ${ALERT_DOMAINS.map((domain) => {
-              if (!(domain in entitiesByDomain)) {
+              if (domain == SELECT_DOMAIN) {
+                return html` <ha-state-icon class="alert" .hass=${this.hass} .stateObj=${entity}></ha-state-icon>`;
+              }
+              if (!(domain in entitiesByDomain.entitiesByDomain)) {
                 return nothing;
               }
               return this._deviceClasses[domain].map((deviceClass) => {
@@ -410,7 +519,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
             </div>
             <div class="buttons">
               ${TOGGLE_DOMAINS.map((domain) => {
-                if (!(domain in entitiesByDomain)) {
+                if (!(domain in entitiesByDomain.entitiesByDomain)) {
                   return '';
                 }
 
