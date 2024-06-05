@@ -15,7 +15,6 @@ import {
   mdiToggleSwitchOff,
   mdiWaterAlert,
   mdiWeatherSunny,
-  mdiLightbulbAuto,
   mdiHeadCog,
 } from '@mdi/js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -27,8 +26,6 @@ import { customElement, property, state } from 'lit/decorators.js';
 import {
   HomeAssistant,
   computeDomain,
-  ActionHandlerEvent,
-  handleAction,
   LovelaceCardEditor,
   getLovelace,
   STATES_OFF,
@@ -204,8 +201,8 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
         return mdiWeatherSunny;
       case SimplyMagicStates.Accent:
         return mdiHomePlus;
-        case SimplyMagicStates.Manual:
-          return mdiHomeOff;
+      case SimplyMagicStates.Manual:
+        return mdiHomeOff;
       default:
         return mdiAlert;
     }
@@ -539,15 +536,15 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
                   <div>${controlState === 'on' ? 'Auto' : lightState === 'on' ? 'on' : 'off'}</div>
                   <ha-svg-icon slot="trailingIcon" .path=${mdiChevronDown}></ha-svg-icon>
                 </ha-button>
-                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${"auto"}>
+                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${'auto'}>
                   <ha-svg-icon .path=${mdiHeadCog} slot="graphic"></ha-svg-icon>
                   Auto
                 </ha-list-item>
-                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${"on"}>
+                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${'on'}>
                   <ha-svg-icon .path=${mdiLightbulbMultiple} slot="graphic"></ha-svg-icon>
                   Always On
                 </ha-list-item>
-                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${"off"}>
+                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${'off'}>
                   <ha-svg-icon .path=${mdiLightbulbMultipleOff} slot="graphic"></ha-svg-icon>
                   Always Off
                 </ha-list-item>
@@ -612,8 +609,8 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     console.log('turn on control ' + controlState);
     turnOnOffEntity(this.hass, this._simplyMagicControlEntity(), controlState);
     if (!controlState) {
-    console.log('turn on light ' + lightState);
-    turnOnOffEntity(this.hass, this._simplyMagicLightEntity(), lightState);
+      console.log('turn on light ' + lightState);
+      turnOnOffEntity(this.hass, this._simplyMagicLightEntity(), lightState);
     }
   }
 
