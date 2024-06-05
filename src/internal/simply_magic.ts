@@ -3,6 +3,7 @@ export const OCCUPIED = 'occupied';
 export const SLEEP = 'sleep';
 export const ACCENT = 'accent';
 export const BRIGHT = 'bright';
+export const MANUAL = 'manual';
 export const UNKNOWN_STATE = 'unknown';
 
 export enum SimplyMagicStates {
@@ -11,4 +12,5 @@ export enum SimplyMagicStates {
     Bright = BRIGHT,
     Accent = ACCENT,
     Occupied = OCCUPIED
+    Manual = MANUAL
 }

@@ -6,6 +6,7 @@ import {
   mdiHome,
   mdiHomeOff,
   mdiHomePlus,
+  mdiChevronDown,
   mdiLightbulbMultiple,
   mdiLightbulbMultipleOff,
   mdiRun,
@@ -14,6 +15,8 @@ import {
   mdiToggleSwitchOff,
   mdiWaterAlert,
   mdiWeatherSunny,
+  mdiLightbulbAuto,
+  mdiHeadCog,
 } from '@mdi/js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -34,6 +37,7 @@ import {
   navigate,
   forwardHaptic,
   LovelaceCard,
+  turnOnOffEntity,
 } from 'custom-card-helpers'; // This is a community maintained npm module with common helper functions/types. https://github.com/custom-cards/custom-card-helpers
 
 import type {
@@ -54,19 +58,20 @@ import { SimplyMagicStates } from './internal/simply_magic';
 
 export const DEFAULT_ASPECT_RATIO = '16:9';
 
-const SENSOR_DOMAINS = ['sensor'];
-
 const SELECT_DOMAIN = 'select';
+const LIGHT_DOMAIN = 'light';
+const SWITCH_DOMAIN = 'switch';
+const SIMPLY_MAGIC_AREA_MANUFACTURER = 'Simply Magic Areas';
+
+const SENSOR_DOMAINS = ['sensor'];
 
 const ALERT_DOMAINS = [SELECT_DOMAIN, 'binary_sensor'];
 
-const TOGGLE_DOMAINS = ['light', 'fan'];
+const TOGGLE_DOMAINS = [LIGHT_DOMAIN, 'fan'];
 
 const OTHER_DOMAINS = ['camera'];
 
-const SIMPLY_MAGIC_AREA_MANUFACTURER = 'Simply Magic Areas';
-
-const SWITCH_DOMAINS = ['switch'];
+const SWITCH_DOMAINS = [SWITCH_DOMAIN];
 
 export const DEVICE_CLASSES = {
   sensor: ['temperature', 'humidity'],
@@ -199,6 +204,8 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
         return mdiWeatherSunny;
       case SimplyMagicStates.Accent:
         return mdiHomePlus;
+        case SimplyMagicStates.Manual:
+          return mdiHomeOff;
       default:
         return mdiAlert;
     }
@@ -465,6 +472,9 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
       cameraEntityId = entitiesByDomain.entitiesByDomain.camera[0].entity_id;
     }
 
+    const controlState = this.hass.states[this._simplyMagicControlEntity()]?.state ?? 'off';
+    const lightState = this.hass.states[this._simplyMagicLightEntity()]?.state ?? 'off';
+
     const imageClass = area.picture || cameraEntityId;
     return html`
       <ha-card
@@ -498,29 +508,51 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
           })}"
           @click=${this._handleNavigation}
         >
-          <div class="alerts">
-            ${ALERT_DOMAINS.map((domain) => {
-              if (domain == SELECT_DOMAIN) {
-                const magicState = this._simplyMagicState();
-                return html` <ha-svg-icon .path=${this._stateIcon(magicState)} class="select"></ha-svg-icon> `;
-              }
-              if (!(domain in entitiesByDomain.entitiesByDomain)) {
-                return nothing;
-              }
-              return this._deviceClasses[domain].map((deviceClass) => {
-                const entity = this._isOn(domain, deviceClass);
-                return entity
-                  ? html`
-                      <ha-state-icon
-                        class="alert"
-                        .hass=${this.hass}
-                        .stateObj=${entity}
-                        entityId=${entity ? entity.entity_id : 'off'}
-                      ></ha-state-icon>
-                    `
-                  : nothing;
-              });
-            })}
+          <div class="top">
+            <div class="alerts">
+              ${ALERT_DOMAINS.map((domain) => {
+                if (domain == SELECT_DOMAIN) {
+                  const magicState = this._simplyMagicState();
+                  return html` <ha-svg-icon .path=${this._stateIcon(magicState)} class="select"></ha-svg-icon> `;
+                }
+                if (!(domain in entitiesByDomain.entitiesByDomain)) {
+                  return nothing;
+                }
+                return this._deviceClasses[domain].map((deviceClass) => {
+                  const entity = this._isOn(domain, deviceClass);
+                  return entity
+                    ? html`
+                        <ha-state-icon
+                          class="alert"
+                          .hass=${this.hass}
+                          .stateObj=${entity}
+                          entityId=${entity ? entity.entity_id : 'off'}
+                        ></ha-state-icon>
+                      `
+                    : nothing;
+                });
+              })}
+            </div>
+            <div class="controls">
+              <ha-button-menu fixed>
+                <ha-button slot="trigger">
+                  <div>${controlState === 'on' ? 'Auto' : lightState === 'on' ? 'on' : 'off'}</div>
+                  <ha-svg-icon slot="trailingIcon" .path=${mdiChevronDown}></ha-svg-icon>
+                </ha-button>
+                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${"auto"}>
+                  <ha-svg-icon .path=${mdiHeadCog} slot="graphic"></ha-svg-icon>
+                  Auto
+                </ha-list-item>
+                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${"on"}>
+                  <ha-svg-icon .path=${mdiLightbulbMultiple} slot="graphic"></ha-svg-icon>
+                  Always On
+                </ha-list-item>
+                <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${"off"}>
+                  <ha-svg-icon .path=${mdiLightbulbMultipleOff} slot="graphic"></ha-svg-icon>
+                  Always Off
+                </ha-list-item>
+              </ha-button-menu>
+            </div>
           </div>
           <div class="bottom">
             <div>
@@ -554,6 +586,47 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     `;
   }
 
+  private _handleChangeControl(ev: Event) {
+    ev.stopPropagation();
+    const state = (ev.currentTarget as any).state as string;
+    console.log(ev.currentTarget);
+    console.log(state);
+    let controlState = true;
+    let lightState = true;
+    switch (state) {
+      case 'auto':
+        controlState = true;
+        lightState = true;
+        break;
+      case 'on':
+        controlState = false;
+        lightState = true;
+        break;
+      case 'off':
+        controlState = false;
+        lightState = false;
+        break;
+      default:
+        return;
+    }
+    console.log('turn on control ' + controlState);
+    turnOnOffEntity(this.hass, this._simplyMagicControlEntity(), controlState);
+    if (!controlState) {
+    console.log('turn on light ' + lightState);
+    turnOnOffEntity(this.hass, this._simplyMagicLightEntity(), lightState);
+    }
+  }
+
+  private _simplyMagicControlEntity() {
+    const area = this._area(this._config.area, this._areas ?? []);
+    return SWITCH_DOMAIN + '.simply_magic_areas_light_control_' + area?.area_id;
+  }
+
+  private _simplyMagicLightEntity() {
+    const area = this._area(this._config.area, this._areas ?? []);
+    return LIGHT_DOMAIN + '.simply_magic_areas_light_' + area?.area_id;
+  }
+
   private _handleNavigation() {
     if (this._config!.navigation_path) {
       navigate(this, this._config!.navigation_path);
@@ -569,12 +642,6 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
       });
     }
     forwardHaptic('light');
-  }
-
-  private _handleAction(ev: ActionHandlerEvent): void {
-    if (this.hass && this._config && ev.detail.action) {
-      handleAction(this, this.hass, this._config, ev.detail.action);
-    }
   }
 
   // https://lit.dev/docs/components/styles/
@@ -631,6 +698,12 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
         margin-top: 8px;
       }
 
+      .buttons {
+        min-width: 100px;
+        display: flex;
+        justify-content: flex-end;
+      }
+
       .sensor {
         white-space: nowrap;
         float: left;
@@ -641,6 +714,17 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
 
       .alerts {
         padding: 16px;
+      }
+
+      .top {
+        display: flex;
+      }
+
+      .controls {
+        display: flex;
+        flex-grow: 2;
+        flex-direction: row;
+        justify-content: flex-end;
       }
 
       .select {
