@@ -21,7 +21,7 @@ export default {
       exclude: 'node_modules/**',
       format: 'es',
       include: 'src/**',
-      exclude: 'homeassistant-frontend/**',
+      exclude: 'node_modules/**',
       babelHelpers: 'bundled',
     }),
     terser(),
