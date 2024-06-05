@@ -11,6 +11,6 @@ export enum SimplyMagicStates {
     Sleep = SLEEP,
     Bright = BRIGHT,
     Accent = ACCENT,
-    Occupied = OCCUPIED
+    Occupied = OCCUPIED,
     Manual = MANUAL
 }
