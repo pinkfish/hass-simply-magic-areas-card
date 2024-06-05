@@ -380,8 +380,8 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
       this.hass.states,
     );
 
-    for (const domainEntities of Object.values(entities)) {
-      for (const stateObj of domainEntities.entitiesByDomain) {
+    for (const domainEntities of Object.values(entities.entitiesByDomain)) {
+      for (const stateObj of domainEntities) {
         if (oldHass!.states[stateObj.entity_id] !== stateObj) {
           return true;
         }
@@ -501,7 +501,6 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
           <div class="alerts">
             ${ALERT_DOMAINS.map((domain) => {
               if (domain == SELECT_DOMAIN) {
-                console.log(this._stateIcon(this._simplyMagicState()));
                 const magicState = this._simplyMagicState();
                 return html` <ha-svg-icon .path=${this._stateIcon(magicState)} class="select"></ha-svg-icon> `;
               }
@@ -511,7 +510,14 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
               return this._deviceClasses[domain].map((deviceClass) => {
                 const entity = this._isOn(domain, deviceClass);
                 return entity
-                  ? html` <ha-state-icon class="alert" .hass=${this.hass} .stateObj=${entity}></ha-state-icon> `
+                  ? html`
+                      <ha-state-icon
+                        class="alert"
+                        .hass=${this.hass}
+                        .stateObj=${entity}
+                        entityId=${entity ? entity.entity_id : 'off'}
+                      ></ha-state-icon>
+                    `
                   : nothing;
               });
             })}
@@ -534,6 +540,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
                         class=${on ? 'on' : 'off'}
                         .path=${DOMAIN_ICONS[domain][on ? 'on' : 'off']}
                         .domain=${domain}
+                        entityId=${on ? on.entity_id : 'off'}
                         @click=${this._toggle}
                       >
                       </ha-icon-button>
