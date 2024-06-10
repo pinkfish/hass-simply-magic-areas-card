@@ -55,14 +55,14 @@ import { SimplyMagicStates } from './internal/simply_magic';
 
 export const DEFAULT_ASPECT_RATIO = '16:9';
 
-const SELECT_DOMAIN = 'select';
 const LIGHT_DOMAIN = 'light';
 const SWITCH_DOMAIN = 'switch';
 const SIMPLY_MAGIC_AREA_MANUFACTURER = 'Simply Magic Areas';
+const SENSOR_DOMAIN = 'sensor';
 
-const SENSOR_DOMAINS = ['sensor'];
+const SENSOR_DOMAINS = [SENSOR_DOMAIN];
 
-const ALERT_DOMAINS = [SELECT_DOMAIN, 'binary_sensor'];
+const ALERT_DOMAINS = [SENSOR_DOMAIN, 'binary_sensor'];
 
 const TOGGLE_DOMAINS = [LIGHT_DOMAIN, 'fan'];
 
@@ -169,7 +169,6 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
 
         if (
           (SENSOR_DOMAINS.includes(domain) || ALERT_DOMAINS.includes(domain)) &&
-          domain !== SELECT_DOMAIN &&
           !deviceClasses[domain].includes(stateObj.attributes.device_class || '')
         ) {
           continue;
@@ -212,23 +211,8 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     if (!this._config) {
       return undefined;
     }
-    const entities = this._entitiesByDomain(
-      this._config!.area ?? '',
-      this._devicesInArea(this._config!.area, this._devices ?? []),
-      this._simplyMagicDevice(this._config!.area, this._devices ?? []),
-      this._entities ?? [],
-      this._deviceClasses,
-      this.hass.states,
-    );
-    if (!entities || !(SELECT_DOMAIN in entities.entitiesByDomain)) {
-      return undefined;
-    }
-    // if we have a magic entity use that for the device type.
-    const magicEntity = entities.magicByDomain[SELECT_DOMAIN];
-    if (magicEntity.length < 1) {
-      return undefined;
-    }
-    return magicEntity[0].state as SimplyMagicStates;
+
+    return this.hass.states[this._simplyMagicStateEntity()]?.state ?? 'clear';
   }
 
   private _isOn(domain: string, deviceClass?: string): HassEntity | undefined {
@@ -508,7 +492,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
           <div class="top">
             <div class="alerts">
               ${ALERT_DOMAINS.map((domain) => {
-                if (domain == SELECT_DOMAIN) {
+                if (domain == SENSOR_DOMAIN) {
                   const magicState = this._simplyMagicState();
                   return html` <ha-svg-icon .path=${this._stateIcon(magicState)} class="select"></ha-svg-icon> `;
                 }
@@ -622,6 +606,11 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
   private _simplyMagicLightEntity() {
     const area = this._area(this._config.area, this._areas ?? []);
     return LIGHT_DOMAIN + '.simply_magic_areas_light_' + area?.area_id;
+  }
+
+  private _simplyMagicStateEntity() {
+    const area = this._area(this._config.area, this._areas ?? []);
+    return SENSOR_DOMAIN + '.simply_magic_areas_state_' + area?.area_id;
   }
 
   private _handleNavigation() {
