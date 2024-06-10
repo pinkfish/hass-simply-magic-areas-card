@@ -616,7 +616,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
 
   private _simplyMagicControlEntity() {
     const area = this._area(this._config.area, this._areas ?? []);
-    return SWITCH_DOMAIN + '.simply_magic_areas_light_control_' + area?.area_id;
+    return SWITCH_DOMAIN + '.simply_magic_areas_system_control_' + area?.area_id;
   }
 
   private _simplyMagicLightEntity() {
