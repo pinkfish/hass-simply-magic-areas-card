@@ -208,10 +208,6 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
   }
 
   private _simplyMagicState(): SimplyMagicStates | undefined {
-    if (!this._config) {
-      return undefined;
-    }
-
     return SimplyMagicStates[this.hass.states[this._simplyMagicStateEntity()]?.state ?? 'clear'];
   }
 
