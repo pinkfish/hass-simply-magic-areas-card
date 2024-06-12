@@ -494,7 +494,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
                     <ha-svg-icon
                       .path=${this._stateIcon(magicState)}
                       class="select"
-                      state=${this.hass.states[this._simplyMagicStateEntity()]?.state}
+                      state=${this._simplyMagicState()}
                       entityId=${this._simplyMagicStateEntity()}
                     ></ha-svg-icon>
                   `;
