@@ -520,7 +520,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
             <div class="controls">
               <ha-button-menu fixed>
                 <ha-button slot="trigger">
-                  <div>${controlState === 'on' ? 'Auto' : lightState === 'on' ? 'on' : 'off'}</div>
+                  <div control=${controlState} lights=${lightState}>${controlState === 'on' ? 'Auto' : lightState === 'on' ? 'on' : 'off'}</div>
                   <ha-svg-icon slot="trailingIcon" .path=${mdiChevronDown}></ha-svg-icon>
                 </ha-button>
                 <ha-list-item graphic="icon" @click=${this._handleChangeControl} .state=${'auto'}>
@@ -573,8 +573,6 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
   private _handleChangeControl(ev: Event) {
     ev.stopPropagation();
     const state = (ev.currentTarget as any).state as string;
-    console.log(ev.currentTarget);
-    console.log(state);
     let controlState = true;
     let lightState = true;
     switch (state) {
@@ -593,21 +591,21 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
       default:
         return;
     }
-    console.log('turn on control ' + controlState);
     turnOnOffEntity(this.hass, this._simplyMagicControlEntity(), controlState);
     if (!controlState) {
-      console.log('turn on light ' + lightState);
       turnOnOffEntity(this.hass, this._simplyMagicLightEntity(), lightState);
     }
   }
 
   private _simplyMagicControlEntity() {
     const area = this._area(this._config.area, this._areas ?? []);
+    console.log(SWITCH_DOMAIN + '.simply_magic_areas_system_control_' + area?.area_id);
     return SWITCH_DOMAIN + '.simply_magic_areas_system_control_' + area?.area_id;
   }
 
   private _simplyMagicLightEntity() {
     const area = this._area(this._config.area, this._areas ?? []);
+    console.log(LIGHT_DOMAIN + '.simply_magic_areas_light_' + area?.area_id);
     return LIGHT_DOMAIN + '.simply_magic_areas_light_' + area?.area_id;
   }
 
