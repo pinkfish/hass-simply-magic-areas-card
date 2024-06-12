@@ -212,7 +212,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
       return undefined;
     }
 
-    return this.hass.states[this._simplyMagicStateEntity()]?.state ?? 'clear';
+    return SimplyMagicStates[this.hass.states[this._simplyMagicStateEntity()]?.state ?? 'clear'];
   }
 
   private _isOn(domain: string, deviceClass?: string): HassEntity | undefined {
@@ -494,7 +494,13 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
               ${ALERT_DOMAINS.map((domain) => {
                 if (domain == SENSOR_DOMAIN) {
                   const magicState = this._simplyMagicState();
-                  return html` <ha-svg-icon .path=${this._stateIcon(magicState)} class="select"></ha-svg-icon> `;
+                  return html`
+                    <ha-svg-icon
+                      .path=${this._stateIcon(magicState)}
+                      class="select"
+                      entityId=${this._simplyMagicStateEntity()}
+                    ></ha-svg-icon>
+                  `;
                 }
                 if (!(domain in entitiesByDomain.entitiesByDomain)) {
                   return nothing;
