@@ -188,7 +188,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     },
   );
 
-  private _stateIcon(state?: SimplyMagicStates) {
+  private _stateIcon(state?: string) {
     switch (state) {
       case SimplyMagicStates.Clear:
         return mdiHomeOff;
@@ -207,7 +207,7 @@ export class SimplyMagicAreaCard extends SubscribeMixin(LitElement) implements L
     }
   }
 
-  private _simplyMagicState(): SimplyMagicStates | undefined {
+  private _simplyMagicState(): string  {
     return SimplyMagicStates[this.hass.states[this._simplyMagicStateEntity()]?.state ?? 'clear'];
   }
 
